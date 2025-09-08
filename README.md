@@ -48,7 +48,7 @@ const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/TON_WEBHOOK';
 node index.js
 ```
 
-> Par défaut, le serveur écoute sur le port `2024` tu peux changer ça à la ligne 6.
+> Par défaut, le serveur écoute sur le port `2099` tu peux changer ça à la ligne 6.
 
 ---
 
@@ -57,7 +57,7 @@ node index.js
 Dans ton dépôt GitHub :
 
 1. Va dans **Settings** → **Webhooks** → **Add webhook**.
-2. **Payload URL** : `http://TON_IP_OU_DOMAINE:2024/github`
+2. **Payload URL** : `http://TON_IP_OU_DOMAINE:2099/github`
 3. **Content type** : `application/json`
 4. **Events** : sélectionne **"Just the push event"**
 5. Clique sur **"Add webhook"**

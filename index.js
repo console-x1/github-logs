@@ -1,21 +1,18 @@
+const axios = require('axios');
 const crypto = require('crypto');
 const express = require('express');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = 3000
-const SECRET = "" // Pas obligatoire
-const DISCORD_WEBHOOK_URL = "" // Url du webhook discord
+const PORT = 2099 // YOUR PORT
+const SECRET = "SECRET"
+const DISCORD_WEBHOOK_URL = "WEBHOOK"
 
-if (SECRET) {
-    app.use(bodyParser.json({
-        verify: (req, res, buf) => {
-            req.rawBody = buf.toString();
-        }
-    }));
-} else {
-    app.use(bodyParser.json())
-}
+app.use(bodyParser.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf.toString();
+    }
+}));
 
 function verifySignature(req) {
     const signature = req.headers['x-hub-signature-256'];
@@ -39,7 +36,7 @@ async function getAvatarFromUsername(username) {
 
 
 app.post('/github', async (req, res) => {
-    if (SECRET && !verifySignature(req)) {
+    if (!verifySignature(req)) {
         console.log('⚠️ Signature invalide. Requête rejetée.');
         return res.status(401).send('Invalid signature');
     }
@@ -82,7 +79,7 @@ app.post('/github', async (req, res) => {
             ].join('\n');
 
             embeds.push({
-                color: "#2050ff",
+                color: 0x00AAFF,
                 author: {
                     name: authorName,
                     icon_url: avatarUrl,
@@ -104,7 +101,7 @@ app.post('/github', async (req, res) => {
         embeds.push({
             title: `⭐ Nouveau ${action === 'created' ? 'star' : 'unstar'} sur le repo !`,
             description: `**${sender.login}** a ${action === 'created' ? 'ajouté' : 'retiré'} une étoile à \`${repoName}\`.`,
-            color: action === 'created' ? "#ffde59" : "#ff0000",
+            color: action === 'created' ? 0xFFD700 : 0x888888,
             author: {
                 name: sender.login,
                 icon_url: avatarUrl,
@@ -166,7 +163,7 @@ app.post('/github', async (req, res) => {
                 title: `📦 Nouveau dépôt créé : ${repo.full_name}`,
                 description: repo.description || '_Pas de description_',
                 url: repo.html_url,
-                color: "#00ff00",
+                color: 0x00AAFF,
                 author: {
                     name: sender.login,
                     icon_url: sender.avatar_url,
@@ -175,23 +172,16 @@ app.post('/github', async (req, res) => {
                 timestamp: new Date().toISOString()
             });
         }
-        else if (payload.action === 'deleted') {
-            const repo = payload.repository;
-            const sender = payload.sender;
-
-            embeds.push({
-                title: `📦 Dépôt supprimée : ${repo.full_name}`,
-                description: repo.description || '_Pas de description_',
-                url: repo.html_url,
-                color: "#ff0000",
-                author: {
-                    name: sender.login,
-                    icon_url: sender.avatar_url,
-                    url: `https://github.com/${sender.login}`
-                },
-                timestamp: new Date().toISOString()
-            });
-        }
+    }
+    else { 
+        console.log(`⚠️ Événement GitHub non géré : ${eventType}`);
+        res.status(200).send(`Événement ${eventType} non géré.`);
+        return axios.post(DISCORD_WEBHOOK_URL, {
+            username: 'GitHub Notifier',
+            content: `⚠️ Événement GitHub non géré : **${eventType}**`
+        }).catch(error => {
+            console.error('Erreur Discord Webhook :', error.message);
+        });
     }
 
     if (!embeds.length) {
@@ -200,6 +190,7 @@ app.post('/github', async (req, res) => {
 
     try {
         await axios.post(DISCORD_WEBHOOK_URL, {
+            avatarUrl: getAvatarFromUsername(payload.sender.login) || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
             username: 'GitHub Notifier',
             embeds
         });
