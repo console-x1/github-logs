@@ -4,15 +4,19 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = 2099 // YOUR PORT
-const SECRET = "SECRET"
-const DISCORD_WEBHOOK_URL = "WEBHOOK"
+const PORT = 3000
+const SECRET = "" // Pas obligatoire
+const DISCORD_WEBHOOK_URL = "" // Url du webhook discord
 
-app.use(bodyParser.json({
-    verify: (req, res, buf) => {
-        req.rawBody = buf.toString();
-    }
-}));
+if (SECRET) {
+    app.use(bodyParser.json({
+        verify: (req, res, buf) => {
+            req.rawBody = buf.toString();
+        }
+    }));
+} else {
+    app.use(bodyParser.json())
+}
 
 function verifySignature(req) {
     const signature = req.headers['x-hub-signature-256'];
@@ -36,7 +40,7 @@ async function getAvatarFromUsername(username) {
 
 
 app.post('/github', async (req, res) => {
-    if (!verifySignature(req)) {
+    if (SECRET && !verifySignature(req)) {
         console.log('⚠️ Signature invalide. Requête rejetée.');
         return res.status(401).send('Invalid signature');
     }
